@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Car, User, LogOut, MapPin } from 'lucide-react';
+import { Car, User, LogOut, MapPin, Search } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +40,22 @@ export const Navbar = () => {
                     Live Map
                   </Button>
                 </Link>
+                
+                <Link to="/search">
+                  <Button variant="ghost" size="sm">
+                    <Search className="h-4 w-4 mr-2" />
+                    Search Rides
+                  </Button>
+                </Link>
+                
+                {profile?.role === 'driver' && (
+                  <Link to="/create-trip">
+                    <Button variant="hero" size="sm">
+                      <Car className="h-4 w-4 mr-2" />
+                      Create Trip
+                    </Button>
+                  </Link>
+                )}
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

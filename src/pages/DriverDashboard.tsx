@@ -197,12 +197,28 @@ export default function DriverDashboard() {
               {isSharing ? 'Stop Sharing' : 'Share Location'}
             </Button>
             
-            <Link to="/create-trip">
-              <Button variant="hero">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Trip
-              </Button>
-            </Link>
+            <div className="flex gap-2">
+              <Link to="/create-trip">
+                <Button variant="hero">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Trip
+                </Button>
+              </Link>
+              
+              <Link to="/search">
+                <Button variant="outline">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Find Rides
+                </Button>
+              </Link>
+              
+              <Link to="/map">
+                <Button variant="outline">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Live Map
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 

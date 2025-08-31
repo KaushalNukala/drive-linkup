@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 export default function Landing() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [searchFrom, setSearchFrom] = useState('');
   const [searchTo, setSearchTo] = useState('');
 
@@ -89,7 +89,27 @@ export default function Landing() {
             </CardContent>
           </Card>
 
-          {!user && (
+          {user ? (
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+              {user && (
+                <>
+                  <Link to={user ? '/search' : '/auth?mode=signup'}>
+                    <Button variant="accent" size="lg" className="px-8">
+                      <Search className="ml-2 h-4 w-4" />
+                      Find Rides
+                    </Button>
+                  </Link>
+                  
+                  <Link to="/map">
+                    <Button variant="outline" size="lg" className="px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
+                      <MapPin className="ml-2 h-4 w-4" />
+                      Live Map
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
+          ) : (
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/auth?mode=signup">
                 <Button variant="accent" size="lg" className="px-8">
@@ -219,6 +239,14 @@ export default function Landing() {
                   <div>
                     <h4 className="font-semibold mb-1">Post Your Trip</h4>
                     <p className="text-muted-foreground">Add your route, schedule, and available seats.</p>
+                    {user && (
+                      <Link to="/create-trip" className="inline-block mt-2">
+                        <Button variant="outline" size="sm">
+                          <Car className="h-3 w-3 mr-1" />
+                          Create Trip
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 </div>
                 
@@ -257,21 +285,48 @@ export default function Landing() {
             Join thousands of travelers already using TripConnect
           </p>
           
-          {!user && (
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/auth?mode=signup">
-                <Button variant="accent" size="lg" className="px-8">
-                  Sign Up Now
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <Link to="/map">
-                <Button variant="outline" size="lg" className="px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
-                  View Live Map
-                </Button>
-              </Link>
-            </div>
-          )}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {user ? (
+              <>
+                <Link to={user && profile?.role === 'driver' ? '/create-trip' : '/search'}>
+                  <Button variant="accent" size="lg" className="px-8">
+                    {user && profile?.role === 'driver' ? (
+                      <>
+                        <Car className="mr-2 h-4 w-4" />
+                        Create Trip
+                      </>
+                    ) : (
+                      <>
+                        <Search className="mr-2 h-4 w-4" />
+                        Find Rides
+                      </>
+                    )}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link to="/map">
+                  <Button variant="outline" size="lg" className="px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
+                    <MapPin className="mr-2 h-4 w-4" />
+                    View Live Map
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/auth?mode=signup">
+                  <Button variant="accent" size="lg" className="px-8">
+                    Sign Up Now
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link to="/map">
+                  <Button variant="outline" size="lg" className="px-8 bg-white/10 border-white/30 text-white hover:bg-white/20">
+                    View Live Map
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </section>
     </div>
