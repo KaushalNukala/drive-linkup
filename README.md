@@ -1,73 +1,99 @@
-# Welcome to your Lovable project
+### TripConnect - Full-Stack Ride-Sharing Website
 
-## Project info
+**🎉 Congratulations! Your TripConnect website is now ready.**
 
-**URL**: https://lovable.dev/projects/0fd73b34-d8d2-4303-9cde-900f066d34e3
+## How to Run in VS Code
 
-## How can I edit this code?
+1. **Clone/Download the project:**
+   ```bash
+   git clone <your-repo-url>
+   cd tripconnect
+   ```
 
-There are several ways of editing your application.
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-**Use Lovable**
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0fd73b34-d8d2-4303-9cde-900f066d34e3) and start prompting.
+4. **Open in browser:**
+   Navigate to `http://localhost:8080`
 
-Changes made via Lovable will be committed automatically to this repo.
+## ✅ Complete Features Implemented
 
-**Use your preferred IDE**
+### 🔐 Authentication System
+- ✅ Email/password signup and login
+- ✅ User roles (Driver/Passenger)
+- ✅ Protected routes based on roles
+- ✅ Automatic profile creation
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 👤 User Management
+- ✅ Driver and Passenger dashboards
+- ✅ Profile management page
+- ✅ Role switching capability
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 🚗 Driver Features
+- ✅ Create and manage trips
+- ✅ Real-time location sharing
+- ✅ Accept/reject passenger requests
+- ✅ View booking requests
+- ✅ Trip status management
 
-Follow these steps:
+### 🧳 Passenger Features
+- ✅ Search trips by route/destination
+- ✅ View available drivers on live map
+- ✅ Request to join trips
+- ✅ Manage bookings
+- ✅ View trip details
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 🗺️ Maps & Live Tracking
+- ✅ Interactive map with OpenStreetMap
+- ✅ Real-time driver location updates
+- ✅ Trip route visualization
+- ✅ Live map with active drivers
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 🏠 All Pages Created
+- ✅ Landing page with search
+- ✅ Authentication (login/signup)
+- ✅ Driver dashboard
+- ✅ Passenger dashboard
+- ✅ Trip creation page
+- ✅ Trip search/browse page
+- ✅ Trip details page
+- ✅ Live map page
+- ✅ Profile settings page
+- ✅ 404 error page
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 🔄 Real-time Features
+- ✅ Live location tracking via WebSocket
+- ✅ Real-time trip updates
+- ✅ Live booking notifications
+- ✅ Dynamic map updates
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### 🎨 Design & UX
+- ✅ Modern, responsive design
+- ✅ Beautiful gradient design system
+- ✅ Smooth animations and transitions
+- ✅ Mobile-friendly interface
+- ✅ Professional color scheme
 
-**Edit a file directly in GitHub**
+## 🚀 Tech Stack
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- **Frontend:** React + TypeScript + Tailwind CSS
+- **Backend:** Supabase (Database + Auth + Real-time)
+- **Maps:** Leaflet + OpenStreetMap
+- **State Management:** React Context + TanStack Query
+- **UI Components:** Shadcn/ui + Custom design system
 
-**Use GitHub Codespaces**
+## 📱 How to Use
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. **Sign up** as either a Driver or Passenger
+2. **Drivers:** Create trips, share location, manage requests
+3. **Passengers:** Search trips, request bookings, track drivers
+4. **Everyone:** Use the live map to see active trips
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/0fd73b34-d8d2-4303-9cde-900f066d34e3) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+**Your TripConnect website is fully functional and ready for users!** 🎊
