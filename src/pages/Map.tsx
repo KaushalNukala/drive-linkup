@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { Trip } from '@/types';
+import { Trip, Profile, DriverLocation } from '@/types';
 import { 
   MapPin, 
   Clock, 
@@ -18,9 +18,12 @@ import {
 
 export default function Map() {
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [drivers, setDrivers] = useState<Profile[]>([]);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [selectedDriver, setSelectedDriver] = useState<Profile | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
 
   useEffect(() => {
     fetchTrips();

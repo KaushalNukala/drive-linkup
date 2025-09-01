@@ -128,8 +128,30 @@ export default function DriverDashboard() {
     if (error) {
       toast.error('Failed to update booking');
     } else {
-      toast.success(`Booking ${status}!`);
+      // Send email notification
+      await supabase.functions.invoke('send-booking-notification', {
+        body: {
+          bookingId,
+          type: status === 'accepted' ? 'booking_accepted' : 'booking_rejected'
+        }
+      });
+      
+      toast.success(`Booking ${status} and notification sent!`);
       fetchBookings();
+    }
+  };
+
+  const deleteTrip = async (tripId: string) => {
+    const { error } = await supabase
+      .from('trips')
+      .delete()
+      .eq('id', tripId);
+    
+    if (error) {
+      toast.error('Failed to delete trip');
+    } else {
+      toast.success('Trip deleted successfully');
+      fetchTrips();
     }
   };
 
@@ -333,6 +355,13 @@ export default function DriverDashboard() {
                                 View Details
                               </Button>
                             </Link>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => deleteTrip(trip.id)}
+                            >
+                              Delete
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
