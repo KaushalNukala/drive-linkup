@@ -12,12 +12,13 @@ import {
   MapPin, 
   Clock, 
   Users, 
-  DollarSign,
+  IndianRupee,
   Navigation,
   Settings,
   MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatINR } from '@/lib/utils';
 
 export default function DriverDashboard() {
   const { profile } = useAuth();
@@ -25,6 +26,7 @@ export default function DriverDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSharing, setIsSharing] = useState(false);
+  const [updatingBookingId, setUpdatingBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -130,14 +132,14 @@ export default function DriverDashboard() {
   };
 
   const updateBookingStatus = async (bookingId: string, status: 'accepted' | 'rejected') => {
-    const { error } = await supabase
-      .from('bookings')
-      .update({ status })
-      .eq('id', bookingId);
-    
-    if (error) {
-      toast.error('Failed to update booking');
-    } else {
+    try {
+      setUpdatingBookingId(bookingId);
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status })
+        .eq('id', bookingId);
+      if (error) throw error;
+
       // Send email notification (non-blocking)
       const { error: fnError } = await supabase.functions.invoke('send-booking-notification', {
         body: {
@@ -149,9 +151,13 @@ export default function DriverDashboard() {
         console.warn('Notification function error', fnError);
         toast.warning('Booking updated, but notification email failed');
       }
-      
-      toast.success(`Booking ${status} and notification sent!`);
+      toast.success(`Booking ${status}!`);
       fetchBookings();
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to update booking');
+    } finally {
+      setUpdatingBookingId(null);
     }
   };
 
@@ -331,10 +337,10 @@ export default function DriverDashboard() {
                             <Badge className={getStatusColor(trip.status)}>
                               {trip.status}
                             </Badge>
-                            {trip.price_per_seat && (
+                            {trip.price_per_seat != null && (
                               <div className="flex items-center text-sm font-medium text-primary">
-                                <DollarSign className="h-3 w-3" />
-                                {trip.price_per_seat}
+                                <IndianRupee className="h-3 w-3" />
+                                {formatINR(Number(trip.price_per_seat))}
                               </div>
                             )}
                           </div>
@@ -432,6 +438,7 @@ export default function DriverDashboard() {
                               variant="destructive"
                               onClick={() => updateBookingStatus(booking.id, 'rejected')}
                               className="flex-1"
+                              disabled={updatingBookingId === booking.id}
                             >
                               Reject
                             </Button>
@@ -440,6 +447,7 @@ export default function DriverDashboard() {
                               variant="success"
                               onClick={() => updateBookingStatus(booking.id, 'accepted')}
                               className="flex-1"
+                              disabled={updatingBookingId === booking.id}
                             >
                               Accept
                             </Button>

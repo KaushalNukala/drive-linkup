@@ -14,7 +14,7 @@ import {
   MapPin, 
   Clock, 
   Users, 
-  DollarSign,
+  IndianRupee,
   User,
   Phone,
   MessageSquare,
@@ -23,6 +23,7 @@ import {
   Star
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatINR } from '@/lib/utils';
 
 export default function TripDetails() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,7 @@ export default function TripDetails() {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [driver, setDriver] = useState<any>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [existingBooking, setExistingBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [showBookingForm, setShowBookingForm] = useState(searchParams.get('book') === 'true');
@@ -47,6 +49,21 @@ export default function TripDetails() {
       fetchTripDetails();
     }
   }, [id]);
+
+  useEffect(() => {
+    const fetchExisting = async () => {
+      if (!id || !user) return;
+      const { data } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('trip_id', id)
+        .eq('passenger_id', user.id)
+        .order('created_at', { ascending: false });
+      const existing = (data || []).find(b => b.status === 'pending' || b.status === 'accepted') || null;
+      setExistingBooking(existing);
+    };
+    fetchExisting();
+  }, [id, user]);
 
   const fetchTripDetails = async () => {
     if (!id) return;
@@ -139,6 +156,16 @@ export default function TripDetails() {
       toast.success('Booking request sent successfully!');
       setShowBookingForm(false);
       setBookingForm({ seats: 1, message: '' });
+      setExistingBooking({
+        id: 'temp',
+        trip_id: trip.id,
+        passenger_id: user.id,
+        seats_requested: bookingForm.seats,
+        status: 'pending',
+        message: bookingForm.message || undefined,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as Booking);
     } catch (error: any) {
       toast.error(error.message || 'Failed to send booking request');
     } finally {
@@ -214,7 +241,7 @@ export default function TripDetails() {
 
   const { date, time } = formatDateTime(trip.departure_time);
   const isDriver = user?.id === trip.driver_id;
-  const canBook = user && !isDriver && trip.status === 'scheduled' && trip.available_seats > 0;
+  const canBook = user && !isDriver && trip.status === 'scheduled' && trip.available_seats > 0 && !existingBooking;
 
   return (
     <div className="min-h-screen bg-background">
@@ -242,8 +269,8 @@ export default function TripDetails() {
                       </Badge>
                       {trip.price_per_seat && (
                         <div className="flex items-center text-xl font-bold text-primary">
-                          <DollarSign className="h-5 w-5" />
-                          {trip.price_per_seat}
+                          <IndianRupee className="h-5 w-5" />
+                          {formatINR(Number(trip.price_per_seat))}
                           <span className="text-sm font-normal text-muted-foreground ml-1">
                             per seat
                           </span>
@@ -426,7 +453,7 @@ export default function TripDetails() {
                   {!showBookingForm ? (
                     <div className="text-center space-y-4">
                       <div className="text-2xl font-bold text-primary">
-                        {trip.price_per_seat ? `$${trip.price_per_seat * bookingForm.seats}` : 'Free'}
+                        {trip.price_per_seat ? formatINR(Number(trip.price_per_seat) * bookingForm.seats) : 'Free'}
                       </div>
                       <Button 
                         onClick={() => setShowBookingForm(true)}
@@ -470,7 +497,7 @@ export default function TripDetails() {
                       <div className="text-center py-3 bg-muted/30 rounded-lg">
                         <p className="text-sm text-muted-foreground">Total Cost</p>
                         <p className="text-xl font-bold text-primary">
-                          {trip.price_per_seat ? `$${trip.price_per_seat * bookingForm.seats}` : 'Free'}
+                          {trip.price_per_seat ? formatINR(Number(trip.price_per_seat) * bookingForm.seats) : 'Free'}
                         </p>
                       </div>
 

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import 'leaflet/dist/leaflet.css';
+import { formatINR } from '@/lib/utils';
 
 // Fix Leaflet default icon URLs
 delete (Icon.Default.prototype as any)._getIconUrl;
@@ -158,6 +159,17 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
     };
   }, []);
 
+  // Center map on current user when available
+  useEffect(() => {
+    if (userPosition && mapRef.current) {
+      try {
+        mapRef.current.setView(userPosition, 15);
+      } catch (e) {
+        // ignore if map is not ready
+      }
+    }
+  }, [userPosition]);
+
   const fetchDriverLocations = async () => {
     try {
       const { data, error } = await supabase
@@ -293,9 +305,9 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
                           <Users className="w-3 h-3" />
                           <span>{trip.available_seats} seats available</span>
                         </div>
-                        {trip.price_per_seat && (
+                        {trip.price_per_seat != null && (
                           <div className="font-medium text-primary">
-                            ${trip.price_per_seat}/seat
+                            {formatINR(Number(trip.price_per_seat))}/seat
                           </div>
                         )}
                       </div>

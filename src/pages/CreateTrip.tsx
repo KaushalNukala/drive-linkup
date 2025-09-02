@@ -11,11 +11,12 @@ import {
   MapPin, 
   Clock, 
   Users, 
-  DollarSign,
+  IndianRupee,
   Car,
   Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatINR } from '@/lib/utils';
 
 export default function CreateTrip() {
   const { profile } = useAuth();
@@ -238,19 +239,19 @@ export default function CreateTrip() {
 
                   <div className="space-y-2">
                     <Label htmlFor="pricePerSeat">Price per Seat (optional)</Label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="pricePerSeat"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={formData.pricePerSeat}
-                        onChange={(e) => handleInputChange('pricePerSeat', e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
+                      <div className="relative">
+                        <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="pricePerSeat"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="0"
+                          value={formData.pricePerSeat}
+                          onChange={(e) => handleInputChange('pricePerSeat', e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
                   </div>
                 </div>
 
@@ -298,8 +299,8 @@ export default function CreateTrip() {
                       
                       {formData.pricePerSeat && (
                         <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-primary" />
-                          <span>${formData.pricePerSeat} per seat</span>
+                          <IndianRupee className="h-4 w-4 text-primary" />
+                          <span>{formatINR(Number(formData.pricePerSeat))} per seat</span>
                         </div>
                       )}
                     </div>

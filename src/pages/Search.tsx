@@ -12,7 +12,7 @@ import {
   MapPin, 
   Clock, 
   Users, 
-  DollarSign,
+  IndianRupee,
   Filter,
   Calendar,
   ArrowRight
@@ -293,8 +293,8 @@ export default function Search() {
                           </Badge>
                           {trip.price_per_seat && (
                             <div className="flex items-center text-lg font-semibold text-primary">
-                              <DollarSign className="h-4 w-4" />
-                              {trip.price_per_seat}
+                              <IndianRupee className="h-4 w-4" />
+                              {formatINR(Number(trip.price_per_seat))}
                               <span className="text-sm font-normal text-muted-foreground ml-1">
                                 per seat
                               </span>

@@ -10,11 +10,12 @@ import {
   MapPin, 
   Clock, 
   Users, 
-  DollarSign, 
+  IndianRupee, 
   Search,
   Filter,
   Car
 } from 'lucide-react';
+import { formatINR } from '@/lib/utils';
 
 export default function Map() {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -24,6 +25,16 @@ export default function Map() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [userCenter, setUserCenter] = useState<[number, number] | null>(null);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setUserCenter([pos.coords.latitude, pos.coords.longitude]),
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 2000 }
+    );
+  }, []);
 
   useEffect(() => {
     fetchTrips();
@@ -152,10 +163,10 @@ export default function Map() {
                               <Badge className={getStatusColor(trip.status)}>
                                 {trip.status === 'active' ? 'Live' : 'Scheduled'}
                               </Badge>
-                              {trip.price_per_seat && (
+                              {trip.price_per_seat != null && (
                                 <div className="flex items-center text-sm font-medium text-primary">
-                                  <DollarSign className="h-3 w-3" />
-                                  {trip.price_per_seat}
+                                  <IndianRupee className="h-3 w-3" />
+                                  {formatINR(Number(trip.price_per_seat))}
                                 </div>
                               )}
                             </div>
@@ -216,8 +227,8 @@ export default function Map() {
                   className="h-full rounded-lg"
                   showDrivers={true}
                   selectedTrip={selectedTrip}
-                  center={[40.7128, -74.0060]} // Default center
-                  zoom={11}
+                  center={userCenter || [20.5937, 78.9629]} // Default to India
+                  zoom={userCenter ? 13 : 5}
                 />
               </CardContent>
             </Card>
@@ -263,8 +274,8 @@ export default function Map() {
                     <div>
                       <h4 className="font-semibold mb-2">Price</h4>
                       <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="h-4 w-4 text-primary" />
-                        <span>${selectedTrip.price_per_seat} per seat</span>
+                        <IndianRupee className="h-4 w-4 text-primary" />
+                        <span>{formatINR(Number(selectedTrip.price_per_seat))} per seat</span>
                       </div>
                     </div>
                   )}
