@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,9 @@ import { toast } from 'sonner';
 export default function CreateTrip() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('edit');
+  const isEditing = !!editId;
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -31,6 +34,33 @@ export default function CreateTrip() {
     pricePerSeat: '',
     description: ''
   });
+
+  // Prefill when editing
+  useEffect(() => {
+    const loadTrip = async () => {
+      if (!isEditing || !profile) return;
+      const { data, error } = await supabase
+        .from('trips')
+        .select('*')
+        .eq('id', editId)
+        .single();
+      if (error || !data) return;
+      if (data.driver_id !== profile.user_id) {
+        return toast.error('You can only edit your own trips');
+      }
+      const dt = new Date(data.departure_time);
+      setFormData({
+        startLocation: data.start_location || '',
+        destination: data.destination || '',
+        departureDate: dt.toISOString().slice(0,10),
+        departureTime: dt.toTimeString().slice(0,5),
+        availableSeats: data.available_seats || 1,
+        pricePerSeat: data.price_per_seat?.toString() || '',
+        description: data.description || ''
+      });
+    };
+    loadTrip();
+  }, [isEditing, editId, profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,24 +94,22 @@ export default function CreateTrip() {
         status: 'scheduled' as const
       };
 
-      const { data, error } = await supabase
-        .from('trips')
-        .insert([tripData])
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
+      if (isEditing) {
+        const { error } = await supabase
+          .from('trips')
+          .update(tripData)
+          .eq('id', editId);
+        if (error) throw error;
+        toast.success('Trip updated successfully!');
+      } else {
+        const { error } = await supabase
+          .from('trips')
+          .insert([tripData]);
+        if (error) throw error;
+        toast.success('Trip created successfully!');
       }
 
-      toast.success('Trip created successfully!');
       navigate('/driver-dashboard');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create trip');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -100,9 +128,9 @@ export default function CreateTrip() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Create New Trip</h1>
+            <h1 className="text-3xl font-bold mb-2">{isEditing ? 'Edit Trip' : 'Create New Trip'}</h1>
             <p className="text-muted-foreground">
-              Share your journey and connect with passengers traveling your route
+              {isEditing ? 'Update your trip details' : 'Share your journey and connect with passengers traveling your route'}
             </p>
           </div>
 
@@ -288,7 +316,7 @@ export default function CreateTrip() {
                     disabled={loading}
                     className="flex-1"
                   >
-                    {loading ? 'Creating Trip...' : 'Create Trip'}
+                    {loading ? (isEditing ? 'Updating...' : 'Creating Trip...') : (isEditing ? 'Update Trip' : 'Create Trip')}
                   </Button>
                 </div>
               </form>

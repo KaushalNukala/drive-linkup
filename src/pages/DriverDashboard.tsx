@@ -71,23 +71,33 @@ export default function DriverDashboard() {
       toast.error('Geolocation is not supported by this browser');
       return;
     }
+    if (!window.isSecureContext) {
+      toast.error('Location sharing requires HTTPS. Please use a secure connection.');
+      return;
+    }
 
     setIsSharing(true);
     
     const updateLocation = async (position: GeolocationPosition) => {
       const { latitude, longitude } = position.coords;
-      
-      await supabase
-        .from('driver_locations')
-        .upsert({
-          driver_id: profile?.user_id,
-          latitude,
-          longitude,
-          heading: position.coords.heading,
-          speed: position.coords.speed,
-        }, {
-          onConflict: 'driver_id'
-        });
+      try {
+        const { error } = await supabase
+          .from('driver_locations')
+          .upsert({
+            driver_id: profile?.user_id,
+            latitude,
+            longitude,
+            heading: position.coords.heading,
+            speed: position.coords.speed,
+          }, {
+            onConflict: 'driver_id'
+          });
+        if (error) throw error;
+      } catch (err) {
+        console.error('Failed to update location:', err);
+        toast.error('Failed to update location');
+        setIsSharing(false);
+      }
     };
 
     const watchId = navigator.geolocation.watchPosition(
@@ -128,13 +138,17 @@ export default function DriverDashboard() {
     if (error) {
       toast.error('Failed to update booking');
     } else {
-      // Send email notification
-      await supabase.functions.invoke('send-booking-notification', {
+      // Send email notification (non-blocking)
+      const { error: fnError } = await supabase.functions.invoke('send-booking-notification', {
         body: {
           bookingId,
           type: status === 'accepted' ? 'booking_accepted' : 'booking_rejected'
         }
       });
+      if (fnError) {
+        console.warn('Notification function error', fnError);
+        toast.warning('Booking updated, but notification email failed');
+      }
       
       toast.success(`Booking ${status} and notification sent!`);
       fetchBookings();
@@ -345,11 +359,12 @@ export default function DriverDashboard() {
                             </div>
                           </div>
 
-                          <div className="flex gap-2 mt-3">
-                            <Button size="sm" variant="outline" className="flex-1">
+                          <Link to={`/create-trip?edit=${trip.id}`} className="flex-1">
+                            <Button size="sm" variant="outline" className="w-full">
                               <Settings className="h-3 w-3 mr-1" />
                               Edit
                             </Button>
+                          </Link>
                             <Link to={`/trip/${trip.id}`} className="flex-1">
                               <Button size="sm" className="w-full">
                                 View Details

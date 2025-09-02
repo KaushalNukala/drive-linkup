@@ -31,7 +31,7 @@ const createDriverIcon = (isMoving: boolean = false) => divIcon({
     justify-content: center;
     color: white;
     font-size: 12px;
-  ">🚗</div>`,
+  ">🏍️</div>`,
   className: 'custom-div-icon',
   iconSize: [24, 24],
   iconAnchor: [12, 12],
@@ -75,6 +75,26 @@ const destinationIcon = divIcon({
   iconAnchor: [14, 14],
 });
 
+// Passenger (current user) bike icon
+const passengerIcon = divIcon({
+  html: `<div style="
+    background: #f59e0b;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+  ">🚲</div>`,
+  className: 'custom-div-icon',
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
+
 interface EnhancedMapComponentProps {
   center?: [number, number];
   zoom?: number;
@@ -95,6 +115,7 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
   const [driverLocations, setDriverLocations] = useState<DriverLocation[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [drivers, setDrivers] = useState<Profile[]>([]);
+  const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const mapRef = useRef<any>(null);
 
   useEffect(() => {
@@ -117,6 +138,25 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
       };
     }
   }, [showDrivers]);
+
+  // Track current user (passenger) geolocation
+  useEffect(() => {
+    if (!('geolocation' in navigator)) return;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setUserPosition([pos.coords.latitude, pos.coords.longitude]);
+      },
+      (err) => {
+        console.warn('Geolocation error:', err);
+      },
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, []);
 
   const fetchDriverLocations = async () => {
     try {

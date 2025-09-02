@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapComponent } from '@/components/map/MapComponent';
+import { EnhancedMapComponent } from '@/components/map/EnhancedMapComponent';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -212,7 +212,7 @@ export default function Map() {
           <div className="lg:col-span-2">
             <Card className="h-[800px]">
               <CardContent className="p-0 h-full">
-                <MapComponent
+                <EnhancedMapComponent
                   className="h-full rounded-lg"
                   showDrivers={true}
                   selectedTrip={selectedTrip}
