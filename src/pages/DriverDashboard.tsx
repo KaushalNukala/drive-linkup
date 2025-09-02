@@ -359,12 +359,13 @@ export default function DriverDashboard() {
                             </div>
                           </div>
 
-                          <Link to={`/create-trip?edit=${trip.id}`} className="flex-1">
-                            <Button size="sm" variant="outline" className="w-full">
-                              <Settings className="h-3 w-3 mr-1" />
-                              Edit
-                            </Button>
-                          </Link>
+                          <div className="flex gap-2 mt-3">
+                            <Link to={`/create-trip?edit=${trip.id}`} className="flex-1">
+                              <Button size="sm" variant="outline" className="w-full">
+                                <Settings className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                            </Link>
                             <Link to={`/trip/${trip.id}`} className="flex-1">
                               <Button size="sm" className="w-full">
                                 View Details

@@ -311,6 +311,18 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
           );
         })}
 
+        {/* Current passenger location */}
+        {userPosition && (
+          <Marker position={userPosition} icon={passengerIcon}>
+            <Popup>
+              <div className="text-center">
+                <div className="font-semibold">Your Location</div>
+                <div className="text-xs text-muted-foreground">Updated in real-time</div>
+              </div>
+            </Popup>
+          </Marker>
+        )}
+
         {/* Selected trip route and markers */}
         {selectedTrip && (
           <>
