@@ -22,20 +22,20 @@ Icon.Default.mergeOptions({
 const createDriverIcon = (isMoving: boolean = false) => divIcon({
   html: `<div style="
     background: ${isMoving ? '#16a34a' : '#2563eb'};
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     border: 3px solid white;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 12px;
+    font-size: 16px;
   ">🏍️</div>`,
   className: 'custom-div-icon',
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
 });
 
 const pickupIcon = divIcon({
@@ -80,20 +80,20 @@ const destinationIcon = divIcon({
 const passengerIcon = divIcon({
   html: `<div style="
     background: #f59e0b;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     border: 3px solid white;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 18px;
+    font-size: 20px;
   ">🏍️</div>`,
   className: 'custom-div-icon',
-  iconSize: [36, 36],
-  iconAnchor: [18, 18],
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
 });
 
 interface EnhancedMapComponentProps {

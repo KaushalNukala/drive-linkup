@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { DriverLocation, Trip } from '@/types';
-import { Car, MapPin, Clock, Users, IndianRupee } from 'lucide-react';
+import { Car, MapPin, Clock, Users } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 
 // Fix for default markers in React Leaflet

@@ -137,21 +137,23 @@ export default function DriverDashboard() {
         .eq('id', bookingId);
       if (error) throw error;
 
-      // Send email notification (non-blocking)
-      const { error: fnError } = await supabase.functions.invoke('send-booking-notification', {
+      toast.success(`Booking ${status}!`);
+      
+      // Send email notification asynchronously (non-blocking)
+      supabase.functions.invoke('send-booking-notification', {
         body: {
           bookingId,
           type: status === 'accepted' ? 'booking_accepted' : 'booking_rejected'
         }
+      }).then(({ error: fnError }) => {
+        if (fnError) {
+          console.warn('Notification function error', fnError);
+        }
       });
-      if (fnError) {
-        console.warn('Notification function error', fnError);
-        toast.warning('Booking updated, but notification email failed');
-      }
-      toast.success(`Booking ${status}!`);
+      
       fetchBookings();
     } catch (e) {
-      console.error(e);
+      console.error('Booking update error:', e);
       toast.error('Failed to update booking');
     } finally {
       setUpdatingBookingId(null);

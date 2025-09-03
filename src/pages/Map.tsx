@@ -13,7 +13,8 @@ import {
   Users, 
   Search,
   Filter,
-  Car
+  Car,
+  IndianRupee
 } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 
