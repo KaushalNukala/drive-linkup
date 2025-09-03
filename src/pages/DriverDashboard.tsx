@@ -12,7 +12,6 @@ import {
   MapPin, 
   Clock, 
   Users, 
-  IndianRupee,
   Navigation,
   Settings,
   MessageSquare
@@ -85,14 +84,12 @@ export default function DriverDashboard() {
       try {
         const { error } = await supabase
           .from('driver_locations')
-          .upsert({
+          .insert({
             driver_id: profile?.user_id,
             latitude,
             longitude,
             heading: position.coords.heading,
             speed: position.coords.speed,
-          }, {
-            onConflict: 'driver_id'
           });
         if (error) throw error;
       } catch (err) {
@@ -338,10 +335,9 @@ export default function DriverDashboard() {
                               {trip.status}
                             </Badge>
                             {trip.price_per_seat != null && (
-                              <div className="flex items-center text-sm font-medium text-primary">
-                                <IndianRupee className="h-3 w-3" />
-                                {formatINR(Number(trip.price_per_seat))}
-                              </div>
+                               <div className="flex items-center text-sm font-medium text-primary">
+                                 {formatINR(Number(trip.price_per_seat))}
+                               </div>
                             )}
                           </div>
 

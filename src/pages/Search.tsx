@@ -12,11 +12,11 @@ import {
   MapPin, 
   Clock, 
   Users, 
-  IndianRupee,
   Filter,
   Calendar,
   ArrowRight
 } from 'lucide-react';
+import { formatINR } from '@/lib/utils';
 
 export default function Search() {
   const { user } = useAuth();
@@ -293,7 +293,6 @@ export default function Search() {
                           </Badge>
                           {trip.price_per_seat && (
                             <div className="flex items-center text-lg font-semibold text-primary">
-                              <IndianRupee className="h-4 w-4" />
                               {formatINR(Number(trip.price_per_seat))}
                               <span className="text-sm font-normal text-muted-foreground ml-1">
                                 per seat

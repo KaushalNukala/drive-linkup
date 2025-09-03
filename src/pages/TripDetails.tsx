@@ -14,7 +14,6 @@ import {
   MapPin, 
   Clock, 
   Users, 
-  IndianRupee,
   User,
   Phone,
   MessageSquare,
@@ -268,13 +267,12 @@ export default function TripDetails() {
                         {trip.status}
                       </Badge>
                       {trip.price_per_seat && (
-                        <div className="flex items-center text-xl font-bold text-primary">
-                          <IndianRupee className="h-5 w-5" />
-                          {formatINR(Number(trip.price_per_seat))}
-                          <span className="text-sm font-normal text-muted-foreground ml-1">
-                            per seat
-                          </span>
-                        </div>
+                         <div className="flex items-center text-xl font-bold text-primary">
+                           {formatINR(Number(trip.price_per_seat))}
+                           <span className="text-sm font-normal text-muted-foreground ml-1">
+                             per seat
+                           </span>
+                         </div>
                       )}
                     </div>
                   </div>

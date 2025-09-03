@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ export default function Landing() {
   const { user, profile } = useAuth();
   const [searchFrom, setSearchFrom] = useState('');
   const [searchTo, setSearchTo] = useState('');
+  const navigate = useNavigate();
 
   const handleSearch = () => {
     if (searchFrom && searchTo) {
@@ -26,7 +27,7 @@ export default function Landing() {
         from: searchFrom,
         to: searchTo
       });
-      window.location.href = `/search?${params.toString()}`;
+      navigate(`/search?${params.toString()}`);
     }
   };
 

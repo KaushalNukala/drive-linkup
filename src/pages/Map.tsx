@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { EnhancedMapComponent } from '@/components/map/EnhancedMapComponent';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,6 @@ import {
   MapPin, 
   Clock, 
   Users, 
-  IndianRupee, 
   Search,
   Filter,
   Car
@@ -26,6 +26,7 @@ export default function Map() {
   const [loading, setLoading] = useState(true);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [userCenter, setUserCenter] = useState<[number, number] | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -165,7 +166,6 @@ export default function Map() {
                               </Badge>
                               {trip.price_per_seat != null && (
                                 <div className="flex items-center text-sm font-medium text-primary">
-                                  <IndianRupee className="h-3 w-3" />
                                   {formatINR(Number(trip.price_per_seat))}
                                 </div>
                               )}
@@ -203,8 +203,7 @@ export default function Map() {
                               className="w-full mt-3"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // Navigate to trip details or booking
-                                window.location.href = `/trip/${trip.id}`;
+                                navigate(`/trip/${trip.id}`);
                               }}
                             >
                               View Details

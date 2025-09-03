@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
-import { Icon } from 'leaflet';
+import { Icon, divIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 }) => {
   const [driverLocations, setDriverLocations] = useState<DriverLocation[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const mapRef = useRef<any>(null);
 
   useEffect(() => {
@@ -74,6 +75,32 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       };
     }
   }, [showDrivers]);
+
+  // Track current user geolocation
+  useEffect(() => {
+    if (!('geolocation' in navigator)) return;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setUserPosition([pos.coords.latitude, pos.coords.longitude]);
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, []);
+
+  // Center map on current user when available
+  useEffect(() => {
+    if (userPosition && mapRef.current) {
+      try {
+        mapRef.current.setView(userPosition, 15);
+      } catch {}
+    }
+  }, [userPosition]);
 
   const fetchDriverLocations = async () => {
     const { data } = await supabase
@@ -176,7 +203,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
                         
                         {trip.price_per_seat && (
                           <div className="text-sm font-medium text-primary">
-                            <IndianRupee className="inline h-3 w-3 mr-1" />
                             {formatINR(Number(trip.price_per_seat))} per seat
                           </div>
                         )}

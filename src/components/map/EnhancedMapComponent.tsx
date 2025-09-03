@@ -80,8 +80,8 @@ const destinationIcon = divIcon({
 const passengerIcon = divIcon({
   html: `<div style="
     background: #f59e0b;
-    width: 24px;
-    height: 24px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     border: 3px solid white;
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
@@ -89,11 +89,11 @@ const passengerIcon = divIcon({
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 12px;
-  ">🚲</div>`,
+    font-size: 18px;
+  ">🏍️</div>`,
   className: 'custom-div-icon',
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
 });
 
 interface EnhancedMapComponentProps {
