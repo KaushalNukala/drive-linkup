@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapComponent } from '@/components/map/MapComponent';
+import { EnhancedMapComponent } from '@/components/map/EnhancedMapComponent';
 import { supabase } from '@/integrations/supabase/client';
 import { Trip, Booking } from '@/types';
 import { 
@@ -343,7 +343,7 @@ export default function TripDetails() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <MapComponent
+                <EnhancedMapComponent
                   className="h-96 rounded-b-lg"
                   selectedTrip={trip}
                   showDrivers={trip.status === 'active'}

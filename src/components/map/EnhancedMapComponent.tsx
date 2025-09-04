@@ -21,21 +21,22 @@ Icon.Default.mergeOptions({
 // Custom icons for different states
 const createDriverIcon = (isMoving: boolean = false) => divIcon({
   html: `<div style="
-    background: ${isMoving ? '#16a34a' : '#2563eb'};
-    width: 32px;
-    height: 32px;
+    background: ${isMoving ? '#ff6b35' : '#e74c3c'};
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
-    border: 3px solid white;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    border: 4px solid white;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 16px;
+    font-size: 24px;
+    font-weight: bold;
   ">🏍️</div>`,
   className: 'custom-div-icon',
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
+  iconSize: [48, 48],
+  iconAnchor: [24, 24],
 });
 
 const pickupIcon = divIcon({

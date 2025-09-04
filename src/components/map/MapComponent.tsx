@@ -20,13 +20,25 @@ Icon.Default.mergeOptions({
   iconAnchor: [12, 41],
 });
 
-// Custom icons
-const driverIcon = new Icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
+// Custom icon for drivers
+const driverIcon = divIcon({
+  html: `<div style="
+    background: #e74c3c;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 4px solid white;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+  ">🏍️</div>`,
+  className: 'custom-div-icon',
+  iconSize: [48, 48],
+  iconAnchor: [24, 24],
 });
 
 interface MapComponentProps {
