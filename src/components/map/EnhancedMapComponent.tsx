@@ -168,17 +168,26 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
 
     try {
       if (selectedTrip && selectedTrip.start_lat && selectedTrip.start_lng && selectedTrip.dest_lat && selectedTrip.dest_lng) {
-        // For trip details, fit bounds to show route
+        // For trip details, fit bounds to show route with padding
         const bounds = [
           [selectedTrip.start_lat, selectedTrip.start_lng],
           [selectedTrip.dest_lat, selectedTrip.dest_lng]
         ] as [[number, number], [number, number]];
-        mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+        
+        // Add a small delay to ensure map is ready
+        setTimeout(() => {
+          try {
+            mapRef.current.fitBounds(bounds, { 
+              padding: [50, 50],
+              maxZoom: 15
+            });
+          } catch (e) {
+            console.warn('Map bounds error:', e);
+          }
+        }, 100);
       } else if (userPosition && !selectedTrip) {
         // For live map, center on user location
         mapRef.current.setView(userPosition, 15);
-        setMapCenter(userPosition);
-        setMapZoom(15);
       }
     } catch (e) {
       console.warn('Map update error:', e);
@@ -268,8 +277,9 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
   return (
     <div className={className}>
       <MapContainer
-        center={center}
-        zoom={zoom}
+        center={selectedTrip && selectedTrip.start_lat && selectedTrip.start_lng ? 
+          [selectedTrip.start_lat, selectedTrip.start_lng] : center}
+        zoom={selectedTrip ? 10 : zoom}
         className="h-full w-full rounded-lg"
         ref={mapRef}
       >
@@ -388,10 +398,9 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
              selectedTrip.dest_lat && selectedTrip.dest_lng && (
               <Polyline
                 positions={getRouteCoordinates(selectedTrip)}
-                color="#2563eb"
+                color="#000000"
                 weight={4}
-                opacity={0.7}
-                dashArray="10, 10"
+                opacity={0.8}
               />
             )}
 
