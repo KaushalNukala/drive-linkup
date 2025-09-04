@@ -50,7 +50,7 @@ interface MapComponentProps {
 }
 
 export const MapComponent: React.FC<MapComponentProps> = ({
-  center = [40.7128, -74.0060], // Default to NYC
+  center = [28.6139, 77.2090], // Default to Delhi, India
   zoom = 13,
   showDrivers = true,
   selectedTrip = null,

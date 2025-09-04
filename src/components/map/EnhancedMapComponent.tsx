@@ -107,7 +107,7 @@ interface EnhancedMapComponentProps {
 }
 
 export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
-  center = [40.7128, -74.0060], // Default to NYC
+  center = [28.6139, 77.2090], // Default to Delhi, India
   zoom = 13,
   selectedTrip,
   showDrivers = true,
@@ -118,6 +118,8 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
   const [trips, setTrips] = useState<Trip[]>([]);
   const [drivers, setDrivers] = useState<Profile[]>([]);
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>(center);
+  const [mapZoom, setMapZoom] = useState<number>(zoom);
   const mapRef = useRef<any>(null);
 
   useEffect(() => {
@@ -160,16 +162,28 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
     };
   }, []);
 
-  // Center map on current user when available
+  // Set map center and zoom based on context
   useEffect(() => {
-    if (userPosition && mapRef.current) {
-      try {
+    if (!mapRef.current) return;
+
+    try {
+      if (selectedTrip && selectedTrip.start_lat && selectedTrip.start_lng && selectedTrip.dest_lat && selectedTrip.dest_lng) {
+        // For trip details, fit bounds to show route
+        const bounds = [
+          [selectedTrip.start_lat, selectedTrip.start_lng],
+          [selectedTrip.dest_lat, selectedTrip.dest_lng]
+        ] as [[number, number], [number, number]];
+        mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      } else if (userPosition && !selectedTrip) {
+        // For live map, center on user location
         mapRef.current.setView(userPosition, 15);
-      } catch (e) {
-        // ignore if map is not ready
+        setMapCenter(userPosition);
+        setMapZoom(15);
       }
+    } catch (e) {
+      console.warn('Map update error:', e);
     }
-  }, [userPosition]);
+  }, [userPosition, selectedTrip]);
 
   const fetchDriverLocations = async () => {
     try {
@@ -324,8 +338,8 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
           );
         })}
 
-        {/* Current passenger location */}
-        {userPosition && (
+        {/* Current passenger location - only show if not in trip details view */}
+        {userPosition && !selectedTrip && (
           <Marker position={userPosition} icon={passengerIcon}>
             <Popup>
               <div className="text-center">
