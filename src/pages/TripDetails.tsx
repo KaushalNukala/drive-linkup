@@ -384,10 +384,10 @@ export default function TripDetails() {
                             </p>
                           )}
                           
-                          {booking.status === 'accepted' && (booking as any).profiles?.phone && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Phone className="h-3 w-3" />
-                              <span>{(booking as any).profiles.phone}</span>
+                          {(booking as any).profiles?.phone && (
+                            <div className="flex items-center gap-2 text-sm mb-2 p-2 bg-muted/30 rounded">
+                              <Phone className="h-3 w-3 text-primary" />
+                              <span className="font-medium">Contact: {(booking as any).profiles.phone}</span>
                             </div>
                           )}
                         </CardContent>
@@ -430,6 +430,13 @@ export default function TripDetails() {
                       <Star key={star} className="h-4 w-4 text-yellow-400 fill-current" />
                     ))}
                   </div>
+                  
+                  {!isDriver && existingBooking?.status === 'accepted' && driver?.phone && (
+                    <div className="flex items-center gap-2 text-sm mb-3 p-3 bg-muted/30 rounded-lg">
+                      <Phone className="h-4 w-4 text-primary" />
+                      <span className="font-medium">Contact: {driver.phone}</span>
+                    </div>
+                  )}
                   
                   {user && trip.status === 'active' && (
                     <Button variant="outline" size="sm" className="w-full">
