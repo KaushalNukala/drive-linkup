@@ -110,6 +110,39 @@ export type Database = {
           },
         ]
       }
+      passenger_locations: {
+        Row: {
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          passenger_id: string
+          speed: number | null
+          trip_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          passenger_id: string
+          speed?: number | null
+          trip_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          passenger_id?: string
+          speed?: number | null
+          trip_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
