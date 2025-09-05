@@ -51,3 +51,14 @@ export interface DriverLocation {
   speed?: number;
   updated_at: string;
 }
+
+export interface PassengerLocation {
+  id: string;
+  passenger_id: string;
+  trip_id?: string;
+  latitude: number;
+  longitude: number;
+  heading?: number;
+  speed?: number;
+  updated_at: string;
+}

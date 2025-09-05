@@ -1,21 +1,24 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle } from 'react-leaflet';
 import { Icon, divIcon } from 'leaflet';
-import { supabase } from '@/integrations/supabase/client';
-import { Trip, DriverLocation, Profile } from '@/types';
-import { Car, MapPin, Navigation, Clock, Users } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import 'leaflet/dist/leaflet.css';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { DriverLocation, PassengerLocation, Trip, Profile } from '@/types';
+import { Car, MapPin, Clock, Users, UserCheck, Navigation } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
-// Fix Leaflet default icon URLs
+// Fix for default markers in React Leaflet
 delete (Icon.Default.prototype as any)._getIconUrl;
 Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
 });
 
 // Custom icons for different states
@@ -114,7 +117,9 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
   onDriverClick,
   className = "h-[500px] w-full rounded-lg"
 }) => {
+  const { user } = useAuth();
   const [driverLocations, setDriverLocations] = useState<DriverLocation[]>([]);
+  const [passengerLocations, setPassengerLocations] = useState<PassengerLocation[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [drivers, setDrivers] = useState<Profile[]>([]);
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
@@ -125,6 +130,7 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
   useEffect(() => {
     if (showDrivers) {
       fetchDriverLocations();
+      fetchPassengerLocations();
       fetchActiveTrips();
       fetchDriverProfiles();
       
@@ -148,8 +154,14 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
     if (!('geolocation' in navigator)) return;
 
     const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        setUserPosition([pos.coords.latitude, pos.coords.longitude]);
+      async (pos) => {
+        const newPosition: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+        setUserPosition(newPosition);
+        
+        // Update user's location in database if they're in an active trip
+        if (selectedTrip && user) {
+          await updateUserLocation(newPosition, selectedTrip.id);
+        }
       },
       (err) => {
         console.warn('Geolocation error:', err);
@@ -160,7 +172,7 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
     return () => {
       navigator.geolocation.clearWatch(watchId);
     };
-  }, []);
+  }, [user, selectedTrip]);
 
   // Set map center and zoom based on context
   useEffect(() => {
@@ -194,6 +206,35 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
     }
   }, [userPosition, selectedTrip]);
 
+  const fetchPassengerLocations = async () => {
+    try {
+      const { data } = await supabase
+        .from('passenger_locations')
+        .select('*')
+        .order('updated_at', { ascending: false });
+      
+      if (data) {
+        // Remove duplicates - keep only the latest location for each passenger
+        const latestLocations = data.reduce((acc: PassengerLocation[], current) => {
+          const existing = acc.find(loc => loc.passenger_id === current.passenger_id);
+          if (!existing || new Date(current.updated_at) > new Date(existing.updated_at)) {
+            if (existing) {
+              const index = acc.indexOf(existing);
+              acc[index] = current;
+            } else {
+              acc.push(current);
+            }
+          }
+          return acc;
+        }, []);
+        
+        setPassengerLocations(latestLocations);
+      }
+    } catch (error) {
+      console.error('Error fetching passenger locations:', error);
+    }
+  };
+
   const fetchDriverLocations = async () => {
     try {
       const { data, error } = await supabase
@@ -213,6 +254,49 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
       }
     } catch (error) {
       console.error('Error fetching driver locations:', error);
+    }
+  };
+
+  const updateUserLocation = async (position: [number, number], tripId?: string) => {
+    if (!user) return;
+
+    try {
+      // Check if user is a driver or passenger for this trip
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile?.role === 'driver') {
+        // Update driver location
+        await supabase
+          .from('driver_locations')
+          .upsert({
+            driver_id: user.id,
+            trip_id: tripId,
+            latitude: position[0],
+            longitude: position[1],
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'driver_id'
+          });
+      } else {
+        // Update passenger location
+        await supabase
+          .from('passenger_locations')
+          .upsert({
+            passenger_id: user.id,
+            trip_id: tripId,
+            latitude: position[0],
+            longitude: position[1],
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'passenger_id'
+          });
+      }
+    } catch (error) {
+      console.error('Error updating location:', error);
     }
   };
 
@@ -347,6 +431,32 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
             </Marker>
           );
         })}
+
+        {/* Passenger locations */}
+        {passengerLocations.map((location) => (
+          <Marker
+            key={location.id}
+            position={[location.latitude, location.longitude]}
+            icon={passengerIcon}
+          >
+            <Popup className="custom-popup">
+              <Card className="border-0 shadow-none">
+                <CardContent className="p-3 min-w-[200px]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <UserCheck className="h-4 w-4 text-primary" />
+                    <span className="font-semibold">Passenger</span>
+                    <Badge variant="outline" className="text-xs">
+                      Active
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Passenger location updated recently
+                  </p>
+                </CardContent>
+              </Card>
+            </Popup>
+          </Marker>
+        ))}
 
         {/* Current passenger location - only show if not in trip details view */}
         {userPosition && !selectedTrip && (
