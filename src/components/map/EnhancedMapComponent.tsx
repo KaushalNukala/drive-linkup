@@ -134,8 +134,8 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
       fetchActiveTrips();
       fetchDriverProfiles();
       
-      // Set up real-time subscription for driver locations
-      const subscription = supabase
+      // Set up real-time subscriptions for locations
+      const driverSub = supabase
         .channel('driver_locations')
         .on('postgres_changes', 
           { event: '*', schema: 'public', table: 'driver_locations' },
@@ -143,8 +143,17 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
         )
         .subscribe();
 
+      const passengerSub = supabase
+        .channel('passenger_locations')
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'passenger_locations' },
+          () => fetchPassengerLocations()
+        )
+        .subscribe();
+
       return () => {
-        supabase.removeChannel(subscription);
+        supabase.removeChannel(driverSub);
+        supabase.removeChannel(passengerSub);
       };
     }
   }, [showDrivers]);
@@ -270,30 +279,28 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
 
       if (profile?.role === 'driver') {
         // Update driver location
-        await supabase
+        const { error: dlError } = await supabase
           .from('driver_locations')
-          .upsert({
+          .insert({
             driver_id: user.id,
             trip_id: tripId,
             latitude: position[0],
             longitude: position[1],
             updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'driver_id'
           });
+        if (dlError) throw dlError;
       } else {
         // Update passenger location
-        await supabase
+        const { error: plError } = await supabase
           .from('passenger_locations')
-          .upsert({
+          .insert({
             passenger_id: user.id,
             trip_id: tripId,
             latitude: position[0],
             longitude: position[1],
             updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'passenger_id'
           });
+        if (plError) throw plError;
       }
     } catch (error) {
       console.error('Error updating location:', error);

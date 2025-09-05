@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import { formatINR } from '@/lib/utils';
 
 export default function DriverDashboard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +76,10 @@ export default function DriverDashboard() {
       toast.error('Location sharing requires HTTPS. Please use a secure connection.');
       return;
     }
+    if (!user?.id) {
+      toast.error('Please sign in as a driver to share location');
+      return;
+    }
 
     setIsSharing(true);
     
@@ -85,7 +89,7 @@ export default function DriverDashboard() {
         const { error } = await supabase
           .from('driver_locations')
           .insert({
-            driver_id: profile?.user_id,
+            driver_id: user?.id,
             latitude,
             longitude,
             heading: position.coords.heading,
