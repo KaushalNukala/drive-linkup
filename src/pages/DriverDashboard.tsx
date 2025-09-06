@@ -56,7 +56,16 @@ export default function DriverDashboard() {
       .from('bookings')
       .select(`
         *,
-        trips!inner(driver_id),
+        trips!inner(
+          id,
+          driver_id,
+          start_location,
+          destination,
+          departure_time,
+          available_seats,
+          price_per_seat,
+          status
+        ),
         profiles:passenger_id(full_name, phone)
       `)
       .eq('trips.driver_id', profile.user_id)
@@ -412,26 +421,64 @@ export default function DriverDashboard() {
                     <p className="text-muted-foreground">No booking requests yet</p>
                   </div>
                 ) : (
-                  bookings.map((booking) => (
-                    <Card key={booking.id} className="border-border">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <p className="font-medium">{(booking as any).profiles?.full_name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {booking.seats_requested} seat{booking.seats_requested > 1 ? 's' : ''}
-                            </p>
+                  bookings.map((booking) => {
+                    const trip = (booking as any).trips;
+                    const passenger = (booking as any).profiles;
+                    const tripDateTime = trip ? formatDateTime(trip.departure_time) : null;
+                    
+                    return (
+                      <Card key={booking.id} className="border-border">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <p className="font-medium">{passenger?.full_name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {booking.seats_requested} seat{booking.seats_requested > 1 ? 's' : ''}
+                              </p>
+                            </div>
+                            <Badge className={getBookingStatusColor(booking.status)}>
+                              {booking.status}
+                            </Badge>
                           </div>
-                          <Badge className={getBookingStatusColor(booking.status)}>
-                            {booking.status}
-                          </Badge>
-                        </div>
 
-                        {booking.message && (
-                          <div className="mb-3">
-                            <p className="text-sm text-muted-foreground">{booking.message}</p>
-                          </div>
-                        )}
+                          {/* Trip Details */}
+                          {trip && (
+                            <div className="mb-3 p-3 bg-muted/30 rounded-lg">
+                              <p className="text-sm font-medium mb-2">Trip Details:</p>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 text-sm">
+                                  <MapPin className="h-3 w-3 text-muted-foreground" />
+                                  <span>{trip.start_location} → {trip.destination}</span>
+                                </div>
+                                {tripDateTime && (
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{tripDateTime.date} {tripDateTime.time}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    <span>{trip.available_seats} seats available</span>
+                                  </div>
+                                  {trip.price_per_seat && (
+                                    <span className="font-medium text-primary">
+                                      {formatINR(Number(trip.price_per_seat))} per seat
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {booking.message && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium mb-1">Message:</p>
+                              <p className="text-sm text-muted-foreground bg-background/50 p-2 rounded border-l-2 border-primary/20">
+                                "{booking.message}"
+                              </p>
+                            </div>
+                          )}
 
                         {booking.status === 'pending' && (
                           <div className="flex gap-2">
@@ -457,7 +504,8 @@ export default function DriverDashboard() {
                         )}
                       </CardContent>
                     </Card>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </CardContent>
