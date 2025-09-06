@@ -37,6 +37,18 @@ export default function DriverDashboard() {
   const fetchTrips = async () => {
     if (!profile) return;
     
+    try {
+      // Auto-update trips whose departure time has passed
+      await supabase
+        .from('trips')
+        .update({ status: 'active' })
+        .lte('departure_time', new Date().toISOString())
+        .eq('driver_id', profile.user_id)
+        .eq('status', 'scheduled');
+    } catch (e) {
+      console.warn('Auto-update trips status failed', e);
+    }
+    
     const { data } = await supabase
       .from('trips')
       .select('*')
@@ -195,6 +207,13 @@ export default function DriverDashboard() {
     };
   };
 
+  const deriveTripStatus = (trip: Trip): Trip['status'] => {
+    if (trip.status === 'completed' || trip.status === 'cancelled') return trip.status;
+    const now = new Date();
+    const dep = new Date(trip.departure_time);
+    return dep <= now ? 'active' : 'scheduled';
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -284,7 +303,7 @@ export default function DriverDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">Active Trips</p>
                   <p className="text-2xl font-bold text-primary">
-                    {trips.filter(t => t.status === 'active').length}
+                    {trips.filter(t => deriveTripStatus(t) === 'active').length}
                   </p>
                 </div>
                 <Car className="h-8 w-8 text-primary" />
@@ -341,13 +360,14 @@ export default function DriverDashboard() {
                 ) : (
                   trips.map((trip) => {
                     const { date, time } = formatDateTime(trip.departure_time);
+                    const computedStatus = deriveTripStatus(trip);
                     
                     return (
                       <Card key={trip.id} className="border-border">
                         <CardContent className="p-4">
                           <div className="flex justify-between items-start mb-3">
-                            <Badge className={getStatusColor(trip.status)}>
-                              {trip.status}
+                            <Badge className={getStatusColor(computedStatus)}>
+                              {computedStatus}
                             </Badge>
                             {trip.price_per_seat != null && (
                                <div className="flex items-center text-sm font-medium text-primary">
