@@ -244,6 +244,33 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
     }
   };
 
+  const fetchDirectionsRoute = async (trip: Trip) => {
+    if (!trip.start_location || !trip.destination) return [];
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('mapbox-directions', {
+        body: {
+          fromName: trip.start_location,
+          toName: trip.destination,
+          country: 'IN' // Focus on India
+        }
+      });
+      
+      if (error) throw error;
+      if (data?.coordinates) {
+        // Convert [lng, lat] to [lat, lng] for Leaflet
+        return data.coordinates.map((coord: [number, number]) => [coord[1], coord[0]]);
+      }
+    } catch (error) {
+      console.warn('Failed to get route from Mapbox:', error);
+      // Fallback to simple straight line
+      if (trip.start_lat && trip.start_lng && trip.dest_lat && trip.dest_lng) {
+        return [[trip.start_lat, trip.start_lng], [trip.dest_lat, trip.dest_lng]];
+      }
+    }
+    return [];
+  };
+
   const fetchDriverLocations = async () => {
     try {
       const { data, error } = await supabase
@@ -353,8 +380,23 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
     return !!location.speed && location.speed > 0;
   };
 
+  // State for route coordinates
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
+
+  // Fetch route when selectedTrip changes
+  useEffect(() => {
+    if (selectedTrip) {
+      fetchDirectionsRoute(selectedTrip).then(setRouteCoordinates);
+    } else {
+      setRouteCoordinates([]);
+    }
+  }, [selectedTrip]);
+
   // Create route line for selected trip
   const getRouteCoordinates = (trip: Trip): [number, number][] => {
+    // Use fetched route if available, otherwise fallback to simple line
+    if (routeCoordinates.length > 0) return routeCoordinates;
+    
     const coords: [number, number][] = [];
     if (trip.start_lat && trip.start_lng) {
       coords.push([trip.start_lat, trip.start_lng]);
@@ -510,14 +552,14 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
               </Marker>
             )}
 
-            {/* Route line */}
-            {selectedTrip.start_lat && selectedTrip.start_lng && 
-             selectedTrip.dest_lat && selectedTrip.dest_lng && (
+            {/* Route line with enhanced styling */}
+            {getRouteCoordinates(selectedTrip).length > 1 && (
               <Polyline
                 positions={getRouteCoordinates(selectedTrip)}
-                color="#000000"
-                weight={4}
+                color="#1e40af"
+                weight={6}
                 opacity={0.8}
+                dashArray="10, 5"
               />
             )}
 

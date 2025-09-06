@@ -20,11 +20,12 @@ import {
 import { toast } from 'sonner';
 
 export default function PassengerDashboard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [searchFrom, setSearchFrom] = useState('');
   const [searchTo, setSearchTo] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -65,6 +66,71 @@ export default function PassengerDashboard() {
       toast.success('Booking cancelled');
       fetchBookings();
     }
+  };
+
+  const startLocationSharing = async () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by this browser');
+      return;
+    }
+    if (!window.isSecureContext) {
+      toast.error('Location sharing requires HTTPS. Please use a secure connection.');
+      return;
+    }
+    if (!user?.id) {
+      toast.error('Please sign in to share location');
+      return;
+    }
+
+    setIsSharing(true);
+    
+    const updateLocation = async (position: GeolocationPosition) => {
+      const { latitude, longitude } = position.coords;
+      try {
+        const { error } = await supabase
+          .from('passenger_locations')
+          .insert({
+            passenger_id: user?.id,
+            latitude,
+            longitude,
+            heading: position.coords.heading,
+            speed: position.coords.speed,
+          });
+        if (error) throw error;
+      } catch (err) {
+        console.error('Failed to update location:', err);
+        toast.error('Failed to update location');
+        setIsSharing(false);
+      }
+    };
+
+    const watchId = navigator.geolocation.watchPosition(
+      updateLocation,
+      (error) => {
+        console.error('Geolocation error:', error);
+        toast.error('Failed to get location');
+        setIsSharing(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 1000
+      }
+    );
+
+    toast.success('Location sharing started');
+    
+    // Store watch ID to stop later if needed
+    (window as any).locationWatchId = watchId;
+  };
+
+  const stopLocationSharing = () => {
+    if ((window as any).locationWatchId) {
+      navigator.geolocation.clearWatch((window as any).locationWatchId);
+      delete (window as any).locationWatchId;
+    }
+    setIsSharing(false);
+    toast.success('Location sharing stopped');
   };
 
   const handleSearch = () => {
@@ -135,6 +201,14 @@ export default function PassengerDashboard() {
           </div>
           
           <div className="flex gap-3">
+            <Button
+              variant={isSharing ? "destructive" : "success"}
+              onClick={isSharing ? stopLocationSharing : startLocationSharing}
+            >
+              <Navigation className="h-4 w-4 mr-2" />
+              {isSharing ? 'Stop Sharing' : 'Share Location'}
+            </Button>
+            
             <Link to="/map">
               <Button variant="outline">
                 <Navigation className="h-4 w-4 mr-2" />
