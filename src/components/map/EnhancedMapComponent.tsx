@@ -10,6 +10,7 @@ import { DriverLocation, PassengerLocation, Trip, Profile } from '@/types';
 import { Car, MapPin, Clock, Users, UserCheck, Navigation } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { geocodePlace, fetchRoadRoute } from '@/lib/geo';
 
 // Fix for default markers in React Leaflet
 delete (Icon.Default.prototype as any)._getIconUrl;
@@ -125,7 +126,13 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
   const mapRef = useRef<any>(null);
+  const [myRole, setMyRole] = useState<'driver' | 'passenger' | null>(null);
+  const [visibleDriverIds, setVisibleDriverIds] = useState<string[]>([]);
+  const [visiblePassengerIds, setVisiblePassengerIds] = useState<string[]>([]);
+  const [resolvedStart, setResolvedStart] = useState<[number, number] | null>(null);
+  const [resolvedDest, setResolvedDest] = useState<[number, number] | null>(null);
 
   useEffect(() => {
     if (showDrivers) {
@@ -167,9 +174,9 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
         const newPosition: [number, number] = [pos.coords.latitude, pos.coords.longitude];
         setUserPosition(newPosition);
         
-        // Update user's location in database if they're in an active trip
-        if (selectedTrip && user) {
-          await updateUserLocation(newPosition, selectedTrip.id);
+        // Share own live location so matched participants can see it
+        if (user) {
+          await updateUserLocation(newPosition, selectedTrip?.id);
         }
       },
       (err) => {
@@ -183,37 +190,116 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
     };
   }, [user, selectedTrip]);
 
-  // Set map center and zoom based on context
+  // Work out who this user is allowed to see on the map
+  useEffect(() => {
+    const load = async () => {
+      if (!user) {
+        setVisibleDriverIds([]);
+        setVisiblePassengerIds([]);
+        return;
+      }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      const role = (profile?.role as 'driver' | 'passenger' | undefined) ?? null;
+      setMyRole(role);
+
+      if (role === 'driver') {
+        const { data: myTrips } = await supabase.from('trips').select('id').eq('driver_id', user.id);
+        const tripIds = (myTrips || []).map((t: any) => t.id);
+        setVisibleDriverIds([]);
+        if (!tripIds.length) return setVisiblePassengerIds([]);
+        const { data: accepted } = await supabase
+          .from('bookings')
+          .select('passenger_id')
+          .eq('status', 'accepted')
+          .in('trip_id', tripIds);
+        setVisiblePassengerIds([...new Set((accepted || []).map((b: any) => b.passenger_id))]);
+      } else {
+        const { data: accepted } = await supabase
+          .from('bookings')
+          .select('trip_id')
+          .eq('passenger_id', user.id)
+          .eq('status', 'accepted');
+        const tripIds = [...new Set((accepted || []).map((b: any) => b.trip_id))];
+        setVisiblePassengerIds([]);
+        if (!tripIds.length) return setVisibleDriverIds([]);
+        const { data: tripRows } = await supabase.from('trips').select('driver_id').in('id', tripIds);
+        setVisibleDriverIds([...new Set((tripRows || []).map((t: any) => t.driver_id))]);
+      }
+    };
+
+    load();
+
+    const bookingSub = supabase
+      .channel('map_bookings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => load())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(bookingSub);
+    };
+  }, [user?.id]);
+
+  // Resolve trip start/destination coordinates (geocode names when missing) and the road route
+  useEffect(() => {
+    let cancelled = false;
+
+    const resolve = async () => {
+      if (!selectedTrip) {
+        setResolvedStart(null);
+        setResolvedDest(null);
+        setRouteCoordinates([]);
+        return;
+      }
+
+      const start: [number, number] | null =
+        selectedTrip.start_lat != null && selectedTrip.start_lng != null
+          ? [selectedTrip.start_lat, selectedTrip.start_lng]
+          : await geocodePlace(selectedTrip.start_location);
+
+      const dest: [number, number] | null =
+        selectedTrip.dest_lat != null && selectedTrip.dest_lng != null
+          ? [selectedTrip.dest_lat, selectedTrip.dest_lng]
+          : await geocodePlace(selectedTrip.destination);
+
+      if (cancelled) return;
+      setResolvedStart(start);
+      setResolvedDest(dest);
+
+      if (start && dest) {
+        const line = await fetchRoadRoute(start, dest);
+        if (!cancelled) setRouteCoordinates(line);
+      } else {
+        setRouteCoordinates([]);
+      }
+    };
+
+    resolve();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTrip?.id, selectedTrip?.start_location, selectedTrip?.destination]);
+
+  // Center map: fit the trip route when there is one, otherwise follow the user
   useEffect(() => {
     if (!mapRef.current) return;
-
     try {
-      if (selectedTrip && selectedTrip.start_lat && selectedTrip.start_lng && selectedTrip.dest_lat && selectedTrip.dest_lng) {
-        // For trip details, fit bounds to show route with padding
-        const bounds = [
-          [selectedTrip.start_lat, selectedTrip.start_lng],
-          [selectedTrip.dest_lat, selectedTrip.dest_lng]
-        ] as [[number, number], [number, number]];
-        
-        // Add a small delay to ensure map is ready
+      if (resolvedStart && resolvedDest) {
         setTimeout(() => {
           try {
-            mapRef.current.fitBounds(bounds, { 
-              padding: [50, 50],
-              maxZoom: 15
-            });
-          } catch (e) {
-            console.warn('Map bounds error:', e);
-          }
-        }, 100);
+            mapRef.current?.fitBounds([resolvedStart, resolvedDest], { padding: [50, 50], maxZoom: 14 });
+          } catch {}
+        }, 150);
       } else if (userPosition && !selectedTrip) {
-        // For live map, center on user location
         mapRef.current.setView(userPosition, 15);
       }
     } catch (e) {
       console.warn('Map update error:', e);
     }
-  }, [userPosition, selectedTrip]);
+  }, [resolvedStart, resolvedDest, userPosition, selectedTrip]);
 
   const fetchPassengerLocations = async () => {
     try {
@@ -244,32 +330,6 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
     }
   };
 
-  const fetchDirectionsRoute = async (trip: Trip) => {
-    if (!trip.start_location || !trip.destination) return [];
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('mapbox-directions', {
-        body: {
-          fromName: trip.start_location,
-          toName: trip.destination,
-          country: 'IN' // Focus on India
-        }
-      });
-      
-      if (error) throw error;
-      if (data?.coordinates) {
-        // Convert [lng, lat] to [lat, lng] for Leaflet
-        return data.coordinates.map((coord: [number, number]) => [coord[1], coord[0]]);
-      }
-    } catch (error) {
-      console.warn('Failed to get route from Mapbox:', error);
-      // Fallback to simple straight line
-      if (trip.start_lat && trip.start_lng && trip.dest_lat && trip.dest_lng) {
-        return [[trip.start_lat, trip.start_lng], [trip.dest_lat, trip.dest_lng]];
-      }
-    }
-    return [];
-  };
 
   const fetchDriverLocations = async () => {
     try {
@@ -380,31 +440,11 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
     return !!location.speed && location.speed > 0;
   };
 
-  // State for route coordinates
-  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
-
-  // Fetch route when selectedTrip changes
-  useEffect(() => {
-    if (selectedTrip) {
-      fetchDirectionsRoute(selectedTrip).then(setRouteCoordinates);
-    } else {
-      setRouteCoordinates([]);
-    }
-  }, [selectedTrip]);
-
-  // Create route line for selected trip
-  const getRouteCoordinates = (trip: Trip): [number, number][] => {
-    // Use fetched route if available, otherwise fallback to simple line
-    if (routeCoordinates.length > 0) return routeCoordinates;
-    
-    const coords: [number, number][] = [];
-    if (trip.start_lat && trip.start_lng) {
-      coords.push([trip.start_lat, trip.start_lng]);
-    }
-    if (trip.dest_lat && trip.dest_lng) {
-      coords.push([trip.dest_lat, trip.dest_lng]);
-    }
-    return coords;
+  // Route line for the selected trip
+  const getRouteCoordinates = (): [number, number][] => {
+    if (routeCoordinates.length > 1) return routeCoordinates;
+    if (resolvedStart && resolvedDest) return [resolvedStart, resolvedDest];
+    return [];
   };
 
   return (
@@ -421,8 +461,10 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        {/* Driver locations */}
-        {showDrivers && driverLocations.map((location) => {
+        {/* Driver locations - only drivers who accepted my booking */}
+        {showDrivers && driverLocations
+          .filter((l) => l.driver_id !== user?.id && visibleDriverIds.includes(l.driver_id))
+          .map((location) => {
           const trip = getTripForDriver(location.driver_id);
           const driverProfile = getDriverProfile(location.driver_id);
           const moving = isDriverMoving(location);
@@ -481,8 +523,10 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
           );
         })}
 
-        {/* Passenger locations */}
-        {passengerLocations.map((location) => (
+        {/* Passenger locations - only passengers with an accepted booking on my rides */}
+        {passengerLocations
+          .filter((l) => l.passenger_id !== user?.id && visiblePassengerIds.includes(l.passenger_id))
+          .map((location) => (
           <Marker
             key={location.id}
             position={[location.latitude, location.longitude]}
@@ -507,9 +551,12 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
           </Marker>
         ))}
 
-        {/* Current passenger location - only show if not in trip details view */}
-        {userPosition && !selectedTrip && (
-          <Marker position={userPosition} icon={passengerIcon}>
+        {/* Your own live location - always visible */}
+        {userPosition && (
+          <Marker
+            position={userPosition}
+            icon={myRole === 'driver' ? createDriverIcon(false) : passengerIcon}
+          >
             <Popup>
               <div className="text-center">
                 <div className="font-semibold">Your Location</div>
@@ -523,11 +570,8 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
         {selectedTrip && (
           <>
             {/* Start location marker */}
-            {selectedTrip.start_lat && selectedTrip.start_lng && (
-              <Marker
-                position={[selectedTrip.start_lat, selectedTrip.start_lng]}
-                icon={pickupIcon}
-              >
+            {resolvedStart && (
+              <Marker position={resolvedStart} icon={pickupIcon}>
                 <Popup>
                   <div className="text-center">
                     <div className="font-semibold text-green-600">Pickup Location</div>
@@ -538,11 +582,8 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
             )}
 
             {/* Destination marker */}
-            {selectedTrip.dest_lat && selectedTrip.dest_lng && (
-              <Marker
-                position={[selectedTrip.dest_lat, selectedTrip.dest_lng]}
-                icon={destinationIcon}
-              >
+            {resolvedDest && (
+              <Marker position={resolvedDest} icon={destinationIcon}>
                 <Popup>
                   <div className="text-center">
                     <div className="font-semibold text-red-600">Destination</div>
@@ -552,21 +593,20 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
               </Marker>
             )}
 
-            {/* Route line with enhanced styling */}
-            {getRouteCoordinates(selectedTrip).length > 1 && (
+            {/* Route line between pickup and destination */}
+            {getRouteCoordinates().length > 1 && (
               <Polyline
-                positions={getRouteCoordinates(selectedTrip)}
-                color="#1e40af"
-                weight={6}
-                opacity={0.8}
-                dashArray="10, 5"
+                positions={getRouteCoordinates()}
+                color="#111827"
+                weight={5}
+                opacity={0.9}
               />
             )}
 
             {/* Pickup radius circle */}
-            {selectedTrip.start_lat && selectedTrip.start_lng && (
+            {resolvedStart && (
               <Circle
-                center={[selectedTrip.start_lat, selectedTrip.start_lng]}
+                center={resolvedStart}
                 radius={500}
                 fillColor="#059669"
                 fillOpacity={0.1}
