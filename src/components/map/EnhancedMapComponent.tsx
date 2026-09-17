@@ -461,8 +461,10 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        {/* Driver locations */}
-        {showDrivers && driverLocations.map((location) => {
+        {/* Driver locations - only drivers who accepted my booking */}
+        {showDrivers && driverLocations
+          .filter((l) => l.driver_id !== user?.id && visibleDriverIds.includes(l.driver_id))
+          .map((location) => {
           const trip = getTripForDriver(location.driver_id);
           const driverProfile = getDriverProfile(location.driver_id);
           const moving = isDriverMoving(location);
@@ -521,8 +523,10 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
           );
         })}
 
-        {/* Passenger locations */}
-        {passengerLocations.map((location) => (
+        {/* Passenger locations - only passengers with an accepted booking on my rides */}
+        {passengerLocations
+          .filter((l) => l.passenger_id !== user?.id && visiblePassengerIds.includes(l.passenger_id))
+          .map((location) => (
           <Marker
             key={location.id}
             position={[location.latitude, location.longitude]}
@@ -547,9 +551,12 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
           </Marker>
         ))}
 
-        {/* Current passenger location - only show if not in trip details view */}
-        {userPosition && !selectedTrip && (
-          <Marker position={userPosition} icon={passengerIcon}>
+        {/* Your own live location - always visible */}
+        {userPosition && (
+          <Marker
+            position={userPosition}
+            icon={myRole === 'driver' ? createDriverIcon(false) : passengerIcon}
+          >
             <Popup>
               <div className="text-center">
                 <div className="font-semibold">Your Location</div>
@@ -563,11 +570,8 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
         {selectedTrip && (
           <>
             {/* Start location marker */}
-            {selectedTrip.start_lat && selectedTrip.start_lng && (
-              <Marker
-                position={[selectedTrip.start_lat, selectedTrip.start_lng]}
-                icon={pickupIcon}
-              >
+            {resolvedStart && (
+              <Marker position={resolvedStart} icon={pickupIcon}>
                 <Popup>
                   <div className="text-center">
                     <div className="font-semibold text-green-600">Pickup Location</div>
@@ -578,11 +582,8 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
             )}
 
             {/* Destination marker */}
-            {selectedTrip.dest_lat && selectedTrip.dest_lng && (
-              <Marker
-                position={[selectedTrip.dest_lat, selectedTrip.dest_lng]}
-                icon={destinationIcon}
-              >
+            {resolvedDest && (
+              <Marker position={resolvedDest} icon={destinationIcon}>
                 <Popup>
                   <div className="text-center">
                     <div className="font-semibold text-red-600">Destination</div>
@@ -592,21 +593,20 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
               </Marker>
             )}
 
-            {/* Route line with enhanced styling */}
-            {getRouteCoordinates(selectedTrip).length > 1 && (
+            {/* Route line between pickup and destination */}
+            {getRouteCoordinates().length > 1 && (
               <Polyline
-                positions={getRouteCoordinates(selectedTrip)}
-                color="#1e40af"
-                weight={6}
-                opacity={0.8}
-                dashArray="10, 5"
+                positions={getRouteCoordinates()}
+                color="#111827"
+                weight={5}
+                opacity={0.9}
               />
             )}
 
             {/* Pickup radius circle */}
-            {selectedTrip.start_lat && selectedTrip.start_lng && (
+            {resolvedStart && (
               <Circle
-                center={[selectedTrip.start_lat, selectedTrip.start_lng]}
+                center={resolvedStart}
                 radius={500}
                 fillColor="#059669"
                 fillOpacity={0.1}
