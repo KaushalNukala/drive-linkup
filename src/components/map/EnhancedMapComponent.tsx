@@ -126,6 +126,7 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
   const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [mapZoom, setMapZoom] = useState<number>(zoom);
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
   const mapRef = useRef<any>(null);
   const [myRole, setMyRole] = useState<'driver' | 'passenger' | null>(null);
   const [visibleDriverIds, setVisibleDriverIds] = useState<string[]>([]);
@@ -439,31 +440,11 @@ export const EnhancedMapComponent: React.FC<EnhancedMapComponentProps> = ({
     return !!location.speed && location.speed > 0;
   };
 
-  // State for route coordinates
-  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
-
-  // Fetch route when selectedTrip changes
-  useEffect(() => {
-    if (selectedTrip) {
-      fetchDirectionsRoute(selectedTrip).then(setRouteCoordinates);
-    } else {
-      setRouteCoordinates([]);
-    }
-  }, [selectedTrip]);
-
-  // Create route line for selected trip
-  const getRouteCoordinates = (trip: Trip): [number, number][] => {
-    // Use fetched route if available, otherwise fallback to simple line
-    if (routeCoordinates.length > 0) return routeCoordinates;
-    
-    const coords: [number, number][] = [];
-    if (trip.start_lat && trip.start_lng) {
-      coords.push([trip.start_lat, trip.start_lng]);
-    }
-    if (trip.dest_lat && trip.dest_lng) {
-      coords.push([trip.dest_lat, trip.dest_lng]);
-    }
-    return coords;
+  // Route line for the selected trip
+  const getRouteCoordinates = (): [number, number][] => {
+    if (routeCoordinates.length > 1) return routeCoordinates;
+    if (resolvedStart && resolvedDest) return [resolvedStart, resolvedDest];
+    return [];
   };
 
   return (
